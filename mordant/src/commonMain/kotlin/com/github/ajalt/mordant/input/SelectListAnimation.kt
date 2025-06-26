@@ -26,10 +26,18 @@ private class SelectConfig(
     var selectedStyle: TextStyle? = null,
     var unselectedTitleStyle: TextStyle? = null,
     var unselectedMarkerStyle: TextStyle? = null,
-    var keyNext: KeyboardEvent = KeyboardEvent("ArrowDown"),
+    var keyNext: List<KeyboardEvent> = listOf(KeyboardEvent("ArrowDown"), KeyboardEvent("j")),
     var descNext: String = "down",
-    var keyPrev: KeyboardEvent = KeyboardEvent("ArrowUp"),
+    var keyPrev: List<KeyboardEvent> = listOf(KeyboardEvent("ArrowUp"), KeyboardEvent("k")),
     var descPrev: String = "up",
+    var keyRight: List<KeyboardEvent> = listOf(KeyboardEvent("ArrowRight"), KeyboardEvent("l")),
+    var descRight: String = "page down",
+    var keyLeft: List<KeyboardEvent> = listOf(KeyboardEvent("ArrowLeft"), KeyboardEvent("h")),
+    var descLeft: String = "page up",
+    var keyHome: List<KeyboardEvent> = listOf(KeyboardEvent("Home"), KeyboardEvent("g")),
+    var descHome: String = "first",
+    var keyEnd: List<KeyboardEvent> = listOf(KeyboardEvent("End"), KeyboardEvent(key = "g", shift = true)),
+    var descEnd: String = "last",
     var keySubmit: KeyboardEvent = KeyboardEvent("Enter"),
     var descSubmit: String = "select",
     var descConfirm: String = "confirm",
@@ -187,7 +195,12 @@ class InteractiveSelectListBuilder(private val terminal: Terminal) {
 
     /** Set the key to move the cursor down */
     fun keyNext(keyNext: KeyboardEvent): InteractiveSelectListBuilder = apply {
-        config.keyNext = keyNext
+        config.keyNext = listOf(keyNext)
+    }
+    
+    /** Set the keys to move the cursor down */
+    fun keyNext(vararg keyNext: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyNext = keyNext.toList()
     }
 
     /** Set the description of the key to move the cursor down */
@@ -197,12 +210,77 @@ class InteractiveSelectListBuilder(private val terminal: Terminal) {
 
     /** Set the key to move the cursor up */
     fun keyPrev(keyPrev: KeyboardEvent): InteractiveSelectListBuilder = apply {
-        config.keyPrev = keyPrev
+        config.keyPrev = listOf(keyPrev)
+    }
+    
+    /** Set the keys to move the cursor up */
+    fun keyPrev(vararg keyPrev: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyPrev = keyPrev.toList()
     }
 
     /** Set the description of the key to move the cursor up */
     fun descPrev(descPrev: String): InteractiveSelectListBuilder = apply {
         config.descPrev = descPrev
+    }
+
+    /** Set the key to move the cursor right (page down) */
+    fun keyRight(keyRight: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyRight = listOf(keyRight)
+    }
+    
+    /** Set the keys to move the cursor right (page down) */
+    fun keyRight(vararg keyRight: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyRight = keyRight.toList()
+    }
+
+    /** Set the description of the key to move the cursor right */
+    fun descRight(descRight: String): InteractiveSelectListBuilder = apply {
+        config.descRight = descRight
+    }
+
+    /** Set the key to move the cursor left (page up) */
+    fun keyLeft(keyLeft: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyLeft = listOf(keyLeft)
+    }
+    
+    /** Set the keys to move the cursor left (page up) */
+    fun keyLeft(vararg keyLeft: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyLeft = keyLeft.toList()
+    }
+
+    /** Set the description of the key to move the cursor left */
+    fun descLeft(descLeft: String): InteractiveSelectListBuilder = apply {
+        config.descLeft = descLeft
+    }
+
+    /** Set the key to move to the first item */
+    fun keyHome(keyHome: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyHome = listOf(keyHome)
+    }
+    
+    /** Set the keys to move to the first item */
+    fun keyHome(vararg keyHome: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyHome = keyHome.toList()
+    }
+
+    /** Set the description of the key to move to the first item */
+    fun descHome(descHome: String): InteractiveSelectListBuilder = apply {
+        config.descHome = descHome
+    }
+
+    /** Set the key to move to the last item */
+    fun keyEnd(keyEnd: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyEnd = listOf(keyEnd)
+    }
+    
+    /** Set the keys to move to the last item */
+    fun keyEnd(vararg keyEnd: KeyboardEvent): InteractiveSelectListBuilder = apply {
+        config.keyEnd = keyEnd.toList()
+    }
+
+    /** Set the description of the key to move to the last item */
+    fun descEnd(descEnd: String): InteractiveSelectListBuilder = apply {
+        config.descEnd = descEnd
     }
 
     /** Set the key to submit the selection */
@@ -367,10 +445,25 @@ private class SelectInputAnimation(
                     else -> cursor
                 }
                 val entry = items[entryIndex]
+                
+                fun keyMatches(keyList: List<KeyboardEvent>): Boolean = keyList.any { it == key }
+                
                 when {
                     key.isCtrlC -> copy(finished = true)
-                    key == keyPrev -> copy(cursor = updateCursor(cursor - 1))
-                    key == keyNext -> copy(cursor = updateCursor(cursor + 1))
+                    keyMatches(keyPrev) -> copy(cursor = updateCursor(cursor - 1))
+                    keyMatches(keyNext) -> copy(cursor = updateCursor(cursor + 1))
+                    keyMatches(keyLeft) -> {
+                        // Page up navigation like gum choose
+                        val pageSize = 10 // Similar to terminal height behavior
+                        copy(cursor = updateCursor((cursor - pageSize).coerceAtLeast(0)))
+                    }
+                    keyMatches(keyRight) -> {
+                        // Page down navigation like gum choose
+                        val pageSize = 10
+                        copy(cursor = updateCursor((cursor + pageSize).coerceAtMost(filteredItems.lastIndex)))
+                    }
+                    keyMatches(keyHome) -> copy(cursor = 0)
+                    keyMatches(keyEnd) -> copy(cursor = filteredItems.lastIndex.coerceAtLeast(0))
                     filterable && !filtering && key == keyFilter -> {
                         copy(filtering = true, applyFilter = true)
                     }
@@ -446,6 +539,10 @@ private class SelectInputAnimation(
         if (key.shift && key.key.length > 1) k = "shift+$k"
         return k
     }
+    
+    private fun keyNames(keys: List<KeyboardEvent>): String {
+        return keys.map { keyName(it) }.joinToString("/")
+    }
 
     private fun buildInstructions(
         singleSelect: Boolean, filtering: Boolean, hasFilter: Boolean,
@@ -454,8 +551,9 @@ private class SelectInputAnimation(
         val parts = buildList {
             if (!singleSelect && !filtering) add(keyName(keyToggle) to descToggle)
             if (singleSelect || !filtering) {
-                add(keyName(keyPrev) to descPrev)
-                add(keyName(keyNext) to descNext)
+                // Only show arrow keys in instructions to keep it concise
+                add(keyName(keyPrev.first()) to descPrev)
+                add(keyName(keyNext.first()) to descNext)
             }
             if (filterable && !filtering) add(keyName(keyFilter) to descFilter)
             if (filtering || hasFilter) add(keyName(keyExitFilter) to descExitFilter)
