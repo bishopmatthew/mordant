@@ -19,6 +19,12 @@ class SelectListAnimationTest {
     private val b = InteractiveSelectListBuilder(t).showInstructions(false)
     private val down = KeyboardEvent("ArrowDown")
     private val up = KeyboardEvent("ArrowUp")
+    private val j = KeyboardEvent("j")
+    private val k = KeyboardEvent("k")
+    private val h = KeyboardEvent("h")
+    private val l = KeyboardEvent("l")
+    private val g = KeyboardEvent("g")
+    private val G = KeyboardEvent(key = "G", shift = true)
     private val slash = KeyboardEvent("/")
     private val enter = KeyboardEvent("Enter")
     private val esc = KeyboardEvent("Escape")
@@ -367,5 +373,72 @@ class SelectListAnimationTest {
 
         a.receiveEvent(enter) shouldBe InputReceiver.Status.Finished(listOf("ax", "cx"))
     }
+
+    @[Test JsName("vim_keybindings")]
+    fun `vim keybindings`() {
+        val a = b.entries("a", "b", "c", "d", "e")
+            .createSingleSelectInputAnimation()
+
+        // Test j (down)
+        a.receiveEvent(j) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░  a
+        ░❯ b
+        ░  c
+        ░  d
+        ░  e
+        """
+
+        // Test k (up)
+        a.receiveEvent(k) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░❯ a
+        ░  b
+        ░  c
+        ░  d
+        ░  e
+        """
+
+        // Test G (end)
+        a.receiveEvent(G) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░  a
+        ░  b
+        ░  c
+        ░  d
+        ░❯ e
+        """
+
+        // Test g (home)
+        a.receiveEvent(g) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░❯ a
+        ░  b
+        ░  c
+        ░  d
+        ░  e
+        """
+
+        // Test l (page down)
+        a.receiveEvent(l) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░  a
+        ░  b
+        ░  c
+        ░  d
+        ░❯ e
+        """
+
+        // Test h (page up)
+        a.receiveEvent(h) shouldBe InputReceiver.Status.Continue
+        rec.latestOutput() shouldMatchRender """
+        ░❯ a
+        ░  b
+        ░  c
+        ░  d
+        ░  e
+        """
+    }
+
 
 }
