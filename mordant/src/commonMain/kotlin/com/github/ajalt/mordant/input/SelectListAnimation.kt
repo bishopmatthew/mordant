@@ -36,7 +36,7 @@ private class SelectConfig(
     var descLeft: String = "page up",
     var keyHome: List<KeyboardEvent> = listOf(KeyboardEvent("Home"), KeyboardEvent("g")),
     var descHome: String = "first",
-    var keyEnd: List<KeyboardEvent> = listOf(KeyboardEvent("End"), KeyboardEvent(key = "g", shift = true)),
+    var keyEnd: List<KeyboardEvent> = listOf(KeyboardEvent("End"), KeyboardEvent(key = "G", shift = true)),
     var descEnd: String = "last",
     var keySubmit: KeyboardEvent = KeyboardEvent("Enter"),
     var descSubmit: String = "select",

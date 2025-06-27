@@ -24,7 +24,7 @@ class SelectListAnimationTest {
     private val h = KeyboardEvent("h")
     private val l = KeyboardEvent("l")
     private val g = KeyboardEvent("g")
-    private val G = KeyboardEvent("G")
+    private val G = KeyboardEvent(key = "G", shift = true)
     private val slash = KeyboardEvent("/")
     private val enter = KeyboardEvent("Enter")
     private val esc = KeyboardEvent("Escape")
